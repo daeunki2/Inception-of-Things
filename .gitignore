@@ -1,0 +1,35 @@
+
+# Vagrant
+.vagrant/
+*.box
+
+# K3s authentication
+.k3s-token
+**/.k3s-token
+**/node-token
+**/k3s.yaml
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*~
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+
+# Subject
+*.pdf
