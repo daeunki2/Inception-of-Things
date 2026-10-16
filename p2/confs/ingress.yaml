@@ -1,0 +1,42 @@
+# Ingress: 외부에서 들어온 HTTP 요청을 HOST(도메인)에 따라 알맞은 Service로 보내는 규칙
+apiVersion: networking.k8s.io/v1    # Ingress가 속한 API 그룹/버전 (networking 그룹)
+kind: Ingress                       # 만들 리소스 종류
+metadata:
+  name: apps-ingress                # Ingress 이름 (자유, kubectl get ingress 에 보임)
+spec:
+  # K3s에 기본 설치된 Traefik이 이 규칙을 읽어서 실제 라우팅을 함
+  ingressClassName: traefik         # 이 규칙표를 처리할 Ingress Controller 지정
+  rules:                            # 라우팅 규칙 목록 (- 하나 = 규칙 하나)
+    # Host: app1.com → Service app1
+    - host: app1.com                # 요청의 Host 헤더가 app1.com 일 때만 적용
+      http:
+        paths:
+          - path: /                 # 경로 "/"
+            pathType: Prefix        # "/"로 시작하는 모든 경로 (= 사실상 전부)
+            backend:                # 요청을 넘길 목적지
+              service:
+                name: app1          # app1.yaml 의 ⑤ Service 이름과 정확히 같아야 함
+                port:
+                  number: 80        # Service의 port (targetPort 8080 아님)
+    # Host: app2.com → Service app2 (pod 3개로 분산)
+    - host: app2.com                # Host 헤더가 app2.com 일 때만 적용
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app2          # app2.yaml 의 Service 이름
+                port:
+                  number: 80
+    # host를 안 적으면 "모든 HOST"에 매칭 → 위 두 규칙에 안 걸린 나머지는 전부 app3
+    # (Traefik은 Host가 지정된 더 구체적인 규칙을 먼저 적용하므로 app1.com/app2.com 은 여기로 안 옴)
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app3          # app3.yaml 의 Service 이름
+                port:
+                  number: 80

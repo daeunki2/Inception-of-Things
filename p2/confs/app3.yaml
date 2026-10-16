@@ -1,0 +1,35 @@
+# Deployment: app3 컨테이너를 1개 띄워서 계속 유지 (Ingress의 기본(default) 앱)
+apiVersion: apps/v1                 # Deployment가 속한 API 그룹/버전
+kind: Deployment                    # 만들 리소스 종류
+metadata:
+  name: app3                        # ① Deployment 이름
+spec:
+  replicas: 1                       # pod를 항상 1개 유지
+  selector:
+    matchLabels:
+      app: app3                     # ② 관리할 pod 조건 (③과 같아야 함)
+  template:                         # pod 설계도
+    metadata:
+      labels:
+        app: app3                   # ③ pod에 붙이는 라벨
+    spec:
+      containers:
+        - name: app3                # ④ 컨테이너 이름
+          image: paulbouwer/hello-kubernetes:1.10   # app1/app2와 같은 이미지
+          ports:
+            - containerPort: 8080   # 컨테이너가 듣는 포트
+          env:
+            - name: MESSAGE
+              value: "Hello from app3."             # 화면에 출력될 문구
+---
+# Service: app3 pod에 고정 주소를 줌
+apiVersion: v1
+kind: Service
+metadata:
+  name: app3                        # ⑤ Service 이름 (Ingress에서 "그 외 전부" → 이 이름으로 연결)
+spec:
+  selector:
+    app: app3                       # ⑥ 트래픽 보낼 pod 조건 (③과 같아야 함)
+  ports:
+    - port: 80                      # Service가 받는 포트
+      targetPort: 8080              # pod로 넘겨줄 포트

@@ -1,0 +1,39 @@
+# Deployment: "이 컨테이너를 몇 개(replicas) 띄워서 계속 유지해라"
+apiVersion: apps/v1                 # Deployment가 속한 API 그룹/버전
+kind: Deployment                    # 만들 리소스 종류
+metadata:
+  name: app1                        # ① Deployment 자체의 이름 (kubectl get deploy 에 보이는 이름, 자유)
+spec:                               # 이 Deployment가 원하는 상태
+  replicas: 1                       # pod를 항상 1개 유지 (죽으면 새로 만듦)
+  # 이 Deployment가 관리할 pod를 label로 찾음
+  selector:
+    matchLabels:
+      app: app1                     # ② "app=app1 라벨 붙은 pod가 내 담당" (③과 반드시 같아야 함)
+  # 실제로 만들어질 pod의 설계도
+  template:
+    metadata:
+      labels:
+        app: app1                   # ③ 새로 만드는 pod에 붙이는 라벨(스티커)
+    spec:                           # pod의 내용
+      containers:                   # pod 안에서 돌릴 컨테이너 목록 (- 하나 = 컨테이너 하나)
+        - name: app1                # ④ 컨테이너 이름 (pod 안에서 구분용, 자유)
+          image: paulbouwer/hello-kubernetes:1.10   # Docker Hub에서 받을 이미지:태그
+          ports:
+            - containerPort: 8080   # 컨테이너가 8080 포트에서 듣는다는 정보 표시
+          env:                      # 컨테이너에 넘길 환경변수
+            - name: MESSAGE         # 이 이미지는 MESSAGE 값을 화면에 출력함
+              value: "Hello from app1."
+---
+# ↑ YAML 문서 구분선: 한 파일에 리소스 여러 개를 담을 때 사용
+# Service: 계속 바뀌는 pod IP 대신 고정된 이름/IP로 pod들에 접근하게 해줌
+apiVersion: v1                      # Service는 핵심(core) 리소스라 그룹 없이 v1
+kind: Service                       # 만들 리소스 종류
+metadata:
+  name: app1                        # ⑤ Service 이름 = 클러스터 내부 DNS 이름 (Ingress가 이 이름을 가리킴)
+spec:
+  # label이 app: app1인 pod들에게 트래픽을 보냄
+  selector:
+    app: app1                       # ⑥ 트래픽 보낼 pod 조건 (③과 반드시 같아야 함)
+  ports:
+    - port: 80          # Service가 받는 포트
+      targetPort: 8080  # pod(컨테이너)로 넘겨줄 포트

@@ -1,0 +1,37 @@
+# Deployment: app2 컨테이너를 3개 띄워서 계속 유지
+apiVersion: apps/v1                 # Deployment가 속한 API 그룹/버전
+kind: Deployment                    # 만들 리소스 종류
+metadata:
+  name: app2                        # ① Deployment 이름
+spec:
+  # 과제 요구사항: app2는 replica 3개
+  replicas: 3                       # pod를 항상 3개 유지 (하나 죽으면 바로 하나 새로 만듦)
+  selector:
+    matchLabels:
+      app: app2                     # ② 관리할 pod 조건 (③과 같아야 함, app1/app3와는 달라야 안 섞임)
+  template:                         # pod 설계도 (이걸로 똑같은 pod 3개가 만들어짐)
+    metadata:
+      labels:
+        app: app2                   # ③ pod에 붙이는 라벨
+    spec:
+      containers:
+        - name: app2                # ④ 컨테이너 이름
+          image: paulbouwer/hello-kubernetes:1.10   # app1과 같은 이미지 (MESSAGE만 다르게)
+          ports:
+            - containerPort: 8080   # 컨테이너가 듣는 포트
+          env:
+            - name: MESSAGE
+              value: "Hello from app2."             # 화면에 출력될 문구
+---
+# Service: pod 3개 앞에 고정 주소 하나를 두고 요청을 나눠줌(로드밸런싱)
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2                        # ⑤ Service 이름 (Ingress에서 app2.com → 이 이름으로 연결)
+spec:
+  # app=app2 라벨을 가진 pod 3개에 트래픽을 나눠서 보냄
+  selector:
+    app: app2                       # ⑥ 트래픽 보낼 pod 조건 (③과 같아야 함)
+  ports:
+    - port: 80                      # Service가 받는 포트
+      targetPort: 8080              # pod로 넘겨줄 포트

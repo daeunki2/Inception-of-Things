@@ -1,0 +1,42 @@
+# ===== 변수 (반복되는 값을 한 곳에서 관리) =====
+LOGIN     = "suna"                 # 팀원 로그인 ID → 머신 이름에 사용 (suna + S = sunaS)
+BOX       = "debian/trixie64"      # 사용할 OS 이미지 (Debian 13 trixie, 최신 안정 버전)
+SERVER_IP = "192.168.56.110"       # 과제에서 지정한 Server의 고정 IP
+CONFS_DIR = "/tmp/confs"           # VM 안에서 yaml 파일들이 놓일 위치 (file provisioner와 server.sh가 같이 사용)
+
+# Vagrant 설정 시작 ("2"는 Vagrantfile 문법 버전, 현재 표준)
+Vagrant.configure("2") do |config|
+  config.vm.box = BOX                                        # 모든 VM이 이 box로 만들어짐
+  config.vm.boot_timeout = 900                               # 부팅 대기 시간 900초 (libvirt 첫 부팅이 느릴 때 대비)
+  config.vm.synced_folder ".", "/vagrant", disabled: true    # 호스트↔VM 공유 폴더 끔 (libvirt에서 NFS 문제 회피)
+
+  # 가상화 provider로 libvirt(KVM) 사용, 그 세부 설정
+  config.vm.provider "libvirt" do |lv|
+    lv.default_prefix = ""         # VM 이름 앞에 폴더명 접두사 안 붙임 → libvirt에서 VM 이름이 "sunaS" 그대로
+    lv.cpus = 1                    # CPU 1개 (과제 권장: 최소 리소스)
+    # K3s server + 앱 5개(app1 1개, app2 3개, app3 1개)가 한 VM에서 돌아가므로 p1보다 여유있게
+    lv.memory = 2048               # RAM 2048MB
+  end
+
+  # Server (Part 2는 VM 1대만 사용)
+  config.vm.define "#{LOGIN}S" do |server|                   # Vagrant 안에서 부르는 머신 이름 (vagrant ssh sunaS)
+    server.vm.hostname = "#{LOGIN}S"                         # VM 내부 OS의 hostname (프롬프트에 보이는 이름)
+    server.vm.network "private_network", ip: SERVER_IP,      # 호스트와 통신할 전용 네트워크 + 고정 IP 할당
+      libvirt__network_name: "iot-p2",                       # libvirt에 만들 가상 네트워크 이름
+      libvirt__forward_mode: "none"                          # 외부(인터넷)로 포워딩 안 하는 내부 전용 네트워크
+
+    # provisioner는 적힌 순서대로 실행됨 (⓪ → ① → ②)
+
+    # ⓪ 이전에 복사해둔 사본 정리 → 항상 빈 자리에 새로 복사되게 함
+    #    폴더가 이미 있으면 file provisioner가 /tmp/confs/confs 처럼 안쪽에 중첩 복사하기 때문
+    #    (복사 "전"에 지우므로 이전 실행이 중간에 실패했어도 안전)
+    server.vm.provision "shell", inline: "rm -rf #{CONFS_DIR}"
+
+    # ① 호스트의 confs/ 폴더를 VM의 /tmp/confs 로 복사 (공유 폴더를 껐으므로 scp 방식으로 업로드)
+    server.vm.provision "file", source: "confs", destination: CONFS_DIR
+
+    # ② server.sh를 root 권한으로 실행, SERVER_IP를 $1, CONFS_DIR을 $2 로 넘김
+    server.vm.provision "shell", path: "scripts/server.sh",
+      args: [SERVER_IP, CONFS_DIR]
+  end
+end
