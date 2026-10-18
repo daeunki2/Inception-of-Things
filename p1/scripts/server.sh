@@ -21,8 +21,8 @@ curl -sfL https://get.k3s.io -o /tmp/install-k3s.sh
 
 INSTALL_K3S_EXEC="server \
     --node-ip ${SERVER_IP} \
-    --advertise-address ${SERVER_IP} \ㅇ
-    --flannel-iface ${IFACE}" \주
+    --advertise-address ${SERVER_IP} \
+    --flannel-iface ${IFACE}" \
     sh /tmp/install-k3s.sh
 #서버모드, 아이피 사설네트워크로 지정, 노드가 사용할 아이피, 인터페이스 지정
 echo "Waiting for K3s token..."
