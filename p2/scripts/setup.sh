@@ -21,3 +21,11 @@ INSTALL_K3S_EXEC="server \
     sh /tmp/install-k3s.sh
 
 echo "K3s Server installation completed."
+
+echo "Deploying applications..."
+
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
+kubectl apply -f /vagrant/confs/
+
+echo "Applications deployed."
