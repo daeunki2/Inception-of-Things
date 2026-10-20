@@ -44,3 +44,5 @@ VM <-> Kubernetes Pod: CNI를 거쳐 host veth <-> pod eth0 연결
 네트워크 연결 흐름(hostonly -> pod)
 Mac -> eth1 -> traekfik(특정 app service) -> eth0 |-> veth -> (cluster ip) -> cni0 -> veth |-> eth0 -> pod
 
+<img width="1536" height="1024" alt="Level 9 네트워크 구조 인포그래픽" src="https://github.com/user-attachments/assets/9844051d-6354-4f40-982b-ddffd31d2679" />
+
