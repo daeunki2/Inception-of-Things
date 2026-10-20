@@ -1,0 +1,27 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    service.yaml                                       :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: chanyoung <chanyoung@student.42.fr>        +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2026/10/19 18:40:11 by chanypar          #+#    #+#              #
+#    Updated: 2026/10/20 20:38:39 by chanyoung        ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: app1-service
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: app1
+
+  ports:
+    - port: 80
+      targetPort: 80
