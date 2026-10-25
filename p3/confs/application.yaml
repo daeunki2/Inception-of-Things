@@ -1,0 +1,19 @@
+# Argo CD Application: GitHub 저장소의 manifests/ 를 감시해서 dev 네임스페이스에 자동 배포
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: wil-playground
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/BEAN4222/iotp3.git   # 저장소 이름에 팀원 로그인 포함 필수
+    targetRevision: HEAD
+    path: .            # yaml 파일들이 저장소 루트에 있음
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true      # 저장소에서 지운 리소스는 클러스터에서도 삭제
+      selfHeal: true   # 클러스터에서 손으로 바꾼 건 저장소 상태로 되돌림
