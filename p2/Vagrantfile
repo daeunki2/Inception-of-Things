@@ -8,8 +8,8 @@ Vagrant.configure("2") do |config|
 
     server.vm.provider "virtualbox" do |v|
 		v.name = "sunaS"
-		v.cpus = 1
-		v.memory = 2048
+		v.cpus = 2
+		v.memory = 4096
     end
 
     server.vm.provision "shell", path: "scripts/setup.sh"
