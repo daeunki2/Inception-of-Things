@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -9,6 +10,7 @@ fi
 
 CLUSTER_NAME="iot-p3"
 CONTEXT="k3d-${CLUSTER_NAME}"
+ARGOCD_VERSION="v2.14.11"
 KUBECTL="/usr/local/bin/kubectl-p3"
 APPLICATION_FILE="/home/vagrant/p3/confs/application.yaml"
 
@@ -42,9 +44,9 @@ if k3d cluster list | awk 'NR > 1 {print $1}' | grep -Fxq "$CLUSTER_NAME"; then
 else
     echo "Creating k3d cluster: $CLUSTER_NAME"
     k3d cluster create "$CLUSTER_NAME" \
-    --servers 1 \
-    --agents 0 \
-    --port "8888:8888@loadbalancer"
+        --servers 1 \
+        --agents 0 \
+        --port "8888:8888@loadbalancer"
 fi
 
 # P3 클러스터 kubeconfig 설정
@@ -68,12 +70,12 @@ k3d kubeconfig merge "$CLUSTER_NAME" \
 "$KUBECTL" create namespace dev \
     --dry-run=client -o yaml | "$KUBECTL" apply -f -
 
-# Argo CD 설치 및 필드 관리 충돌 해결
+# 고정된 버전의 Argo CD 설치
 "$KUBECTL" apply \
     --server-side \
     --force-conflicts \
     -n argocd \
-    -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
 
 # Argo CD 주요 구성 요소 준비 확인
 "$KUBECTL" rollout status deployment/argocd-server \
