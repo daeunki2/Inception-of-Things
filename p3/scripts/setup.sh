@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -42,7 +41,10 @@ if k3d cluster list | awk 'NR > 1 {print $1}' | grep -Fxq "$CLUSTER_NAME"; then
     k3d cluster start "$CLUSTER_NAME"
 else
     echo "Creating k3d cluster: $CLUSTER_NAME"
-    k3d cluster create "$CLUSTER_NAME" --agents 0
+    k3d cluster create "$CLUSTER_NAME" \
+    --servers 1 \
+    --agents 0 \
+    --port "8888:8888@loadbalancer"
 fi
 
 # P3 클러스터 kubeconfig 설정
