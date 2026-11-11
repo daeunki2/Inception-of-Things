@@ -62,6 +62,7 @@ if ! sudo k3d cluster list -o json | grep -Eq "\"name\"[[:space:]]*:[[:space:]]*
         --agents 0 \
         --port "8080:30080@server:0" \
         --port "8081:30081@server:0" \
+        --port "8888:8888@loadbalancer" \
         --wait
 else
     echo "[INFO] 기존 클러스터를 시작합니다."
@@ -121,6 +122,10 @@ echo "[INFO] Argo CD Application Controller 준비 대기 중..."
 kube rollout status statefulset/argocd-application-controller \
     -n argocd \
     --timeout=300s
+
+# GitLab 저장소를 Argo CD Application에 연결합니다.
+echo "[INFO] Argo CD Application 등록 중..."
+kube apply -n argocd -f "${CONF_DIR}/application.yaml"
 
 # 브라우저에서 Argo CD에 접속할 수 있도록 Service를 설정합니다.
 echo "[INFO] Argo CD 외부 접속 Service 설정 중..."
