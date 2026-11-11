@@ -57,6 +57,8 @@ done
 echo "[INFO] Bonus 클러스터 준비 중..."
 
 if ! sudo k3d cluster list -o json | grep -Eq "\"name\"[[:space:]]*:[[:space:]]*\"${CLUSTER_NAME}\""; then
+    echo "[INFO] 새로운 Bonus 클러스터를 생성합니다."
+
     sudo k3d cluster create "$CLUSTER_NAME" \
         --servers 1 \
         --agents 0 \
@@ -123,21 +125,24 @@ kube rollout status statefulset/argocd-application-controller \
     -n argocd \
     --timeout=300s
 
-# GitLab 저장소를 Argo CD Application에 연결합니다.
-echo "[INFO] Argo CD Application 등록 중..."
-kube apply -n argocd -f "${CONF_DIR}/application.yaml"
-
 # 브라우저에서 Argo CD에 접속할 수 있도록 Service를 설정합니다.
 echo "[INFO] Argo CD 외부 접속 Service 설정 중..."
 kube apply -n argocd -f "${CONF_DIR}/argocd-service.yaml"
 
-# GitLab 저장소가 준비되었는지 확인합니다.
-# 저장소가 존재하면 Argo CD Application을 등록합니다.
+# GitLab 저장소가 실제로 접근 가능한지 확인합니다.
 echo "[INFO] GitLab 저장소 확인 중..."
 
 GITLAB_REPO_URL="http://gitlab.gitlab.svc.cluster.local/chanypar/iot.git"
 
-if kube run gitlab-repo-check \
+# 이전 실행에서 남아 있을 수 있는 확인용 Pod를 정리합니다.
+kube delete pod gitlab-repo-check \
+    -n gitlab \
+    --ignore-not-found \
+    --wait=true
+
+# 임시 Pod를 생성하여 GitLab 저장소에 접근합니다.
+# git ls-remote는 저장소의 원격 Git 참조를 조회합니다.
+if ! kube run gitlab-repo-check \
     -n gitlab \
     --image=alpine/git:latest \
     --restart=Never \
@@ -146,25 +151,43 @@ if kube run gitlab-repo-check \
     --command -- \
     git ls-remote "$GITLAB_REPO_URL" HEAD; then
 
-    echo "[INFO] GitLab 저장소 확인 완료"
-    echo "[INFO] Argo CD Application 등록 중..."
-
-    kube apply -n argocd -f "${CONF_DIR}/application.yaml"
-else
-    echo "[WARN] GitLab 저장소에 접근할 수 없습니다."
-    echo "[WARN] GitLab 프로젝트 생성 및 공개 설정을 확인하세요."
-    echo "[WARN] 준비 후 다음 명령어로 Application을 등록할 수 있습니다."
-    echo "sudo ${KUBECTL} --context ${CONTEXT} apply -f ${CONF_DIR}/application.yaml"
+    echo "[ERROR] GitLab 저장소에 접근할 수 없습니다."
+    echo "[ERROR] GitLab 프로젝트 생성 및 공개 설정을 확인하세요."
+    exit 1
 fi
 
-# 설치된 Kubernetes 리소스를 확인합니다.
-echo "[INFO] 최종 상태 확인"
+echo "[INFO] GitLab 저장소 확인 완료"
 
+# 저장소 확인이 성공한 경우에만 Argo CD Application을 등록합니다.
+echo "[INFO] Argo CD Application 등록 중..."
+kube apply -n argocd -f "${CONF_DIR}/application.yaml"
+
+# 설치된 Kubernetes 리소스의 최종 상태를 확인합니다.
+echo ""
+echo "========== Final Status =========="
+
+echo ""
+echo "=== GitLab Pods ==="
 kube get pods -n gitlab
+
+echo ""
+echo "=== Argo CD Pods ==="
 kube get pods -n argocd
+
+echo ""
+echo "=== Playground Pods ==="
 kube get pods -n dev
+
+echo ""
+echo "=== Argo CD Applications ==="
 kube get applications -n argocd
+
+echo ""
+echo "=== Namespaces ==="
 kube get namespaces
+
+echo ""
+echo "=================================="
 
 echo "[SUCCESS] Bonus 클러스터 설정 완료"
 echo "[INFO] GitLab: http://192.168.56.110:8080"
