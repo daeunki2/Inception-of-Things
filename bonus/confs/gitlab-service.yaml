@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab
+  namespace: gitlab
+
+spec:
+  # Kubernetes 노드의 특정 포트를 외부에 공개
+  type: NodePort
+
+  # app=gitlab 라벨을 가진 Pod로 요청 전달
+  selector:
+    app: gitlab
+
+  ports:
+    - name: http
+      protocol: TCP
+
+      # Kubernetes Service의 내부 포트
+      port: 80
+
+      # GitLab 컨테이너의 실제 HTTP 포트
+      targetPort: 80
+
+      # k3d 노드에서 외부 요청을 받을 포트
+      nodePort: 30080
+
+            #root chanypar+suna
