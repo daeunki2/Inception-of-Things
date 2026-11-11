@@ -11,7 +11,8 @@ Vagrant.configure("2") do |config|
 		v.cpus = 2
 		v.memory = 4096
     end
-
+        # HOST의 p3 디렉터리를 VM의 /home/vagrant/p3에 연결
+    server.vm.synced_folder "../p3", "/home/vagrant/p3"
     server.vm.provision "shell", path: "scripts/setup.sh"
 	end
 
